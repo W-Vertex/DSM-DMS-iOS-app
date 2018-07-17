@@ -9,10 +9,3 @@ pod "RxCocoa"
 pod 'RxKeyboard'
 
 end
-
-target 'MealExtension' do
-use_frameworks!
-
-pod "RxSwift"
-
-end
