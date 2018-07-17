@@ -94,15 +94,14 @@ extension ApplyStudyVC{
     
     private func getMap(){
         selectedSeat = 0
-        self.bindData([[1,2,3,4,5,6,7,8,9],[0,0,0,1,2,3,0,0,1], ["1", "2"]])
-//        _ = Connector.instance
-//            .getRequest(ApplyAPI.getExtensionMapInfo(time: selectedTime), method: .get, params: ["classNum" : "\(selectedClass)"])
-//            .getDataForMap(vc: self)
-//            .subscribe(onNext: { [weak self] code, data in
-//                guard let strongSelf = self else { return }
-//                if code == 200{ strongSelf.bindData(data! as! [[Any]]) }
-//                else{ strongSelf.showError(code) }
-//            })
+        _ = Connector.instance
+            .getRequest(ApplyAPI.getExtensionMapInfo(time: selectedTime), method: .get, params: ["classNum" : "\(selectedClass)"])
+            .getDataForMap(vc: self)
+            .subscribe(onNext: { [weak self] code, data in
+                guard let strongSelf = self else { return }
+                if code == 200{ strongSelf.bindData(data! as! [[Any]]) }
+                else{ strongSelf.showError(code) }
+            })
     }
     
     private func bindData(_ dataArr: [[Any]]){
