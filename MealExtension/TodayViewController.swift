@@ -8,7 +8,6 @@
 
 import UIKit
 import NotificationCenter
-import RxSwift
 
 class TodayViewController: UIViewController, NCWidgetProviding {
         
@@ -62,7 +61,7 @@ extension TodayViewController{
             date! += aDay
             currentTime = 0
         }
-        getData()
+        connect()
     }
     
     private func setData(){
@@ -70,36 +69,36 @@ extension TodayViewController{
         case -1:
             date! -= aDay
             currentTime = 2
-            getData()
+            connect()
         case 3:
             date! += aDay
             currentTime = 0
-            getData()
+            connect()
         default:
             bind()
         }
     }
     
-    private func getData(){
+    private func connect(){
         formatter.dateFormat = "YYYY-MM-dd"
         let dateStr = formatter.string(from: date)
-        dateLabel.text = dateStr
-        _ = Connector.instance
-            .getRequest(InfoAPI.getMealInfo(date: dateStr), method: .get)
-            .decodeData(MealModel.self)
-            .subscribe(onNext: { [weak self] code, data in
-                guard let strongSelf = self else { return }
-                switch code{
-                case 200: strongSelf.data = data!.getDataForExtension()
-                case 204: strongSelf.data = ["급식이 없습니다", "급식이 없습니다", "급식이 없습니다"]
-                default: strongSelf.data = ["오류 : \(code)", "오류 : \(code)", "오류 : \(code)"]
-                }
-                strongSelf.bind()
-            })
+        URLSession.shared.dataTask(with: URL(string: "http://dsm2015.cafe24.com/v2/" + InfoAPI.getMealInfo(date: dateStr).getPath())!){
+            [weak self] data, res, err in
+            guard let strongSelf = self else { return }
+            if let err = err { print(err.localizedDescription); return }
+            switch (res as! HTTPURLResponse).statusCode{
+            case 200: strongSelf.data = try! JSONDecoder().decode(MealModel.self, from: data!).getDataForExtension()
+            case 204: strongSelf.data = ["급식이 없습니다", "급식이 없습니다", "급식이 없습니다"]
+            case let code: strongSelf.data = ["오류 : \(code)", "오류 : \(code)", "오류 : \(code)"]
+            }
+            DispatchQueue.main.async { strongSelf.bind() }
+        }.resume()
     }
     
     func bind(){
-        print(currentTime)
+        formatter.dateFormat = "YYYY-MM-dd"
+        let dateStr = formatter.string(from: date)
+        dateLabel.text = dateStr
         timeLabel.text = ["아침", "점심", "저녁"][currentTime]
         dataTextView.text = data[currentTime]
     }
