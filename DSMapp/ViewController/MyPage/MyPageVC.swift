@@ -40,34 +40,57 @@ extension MyPageVC {
     
     private func loadData(){
         if !loginCheck() { return }
+        loadUserData()
+        loadApplyData()
+    }
+    
+    private func loadUserData(){
         _ = Connector.instance
             .getRequest(InfoAPI.getMypageInfo, method: .get)
             .decodeData(MyPageModel.self, vc: self)
             .subscribe(onNext: { [weak self] code, data in
-                if code == 200{ self?.setBind(data!) }
+                if let data = data{
+                    self?.bindUserPointData(good: data.goodPoint, bad: data.badPoint)
+                    self?.showToast(msg: "\(data.name)님 반갑습니다.")
+                }
                 else{ self?.showError(code) }
             })
     }
     
-    private func setBind(_ data: MyPageModel){
-        setData(study: data.getStudyState(), stay: data.getStayState(), good: data.good_point, bad: data.bad_point)
+    private func loadApplyData(){
+        _ = Connector.instance
+            .getRequest(InfoAPI.getApplyInfo, method: .get)
+            .decodeData(ApplyModel.self, vc: self)
+            .subscribe(onNext: { [weak self] code, data in
+                if let data = data{
+                    self?.bindUserApplyData(study: data.getStudyState(), stay: data.getStayState())
+                }else{ self?.showError(code) }
+            })
+    }
+    
+    private func bindUserPointData(good: Int = 0, bad: Int = 0){
+        positiveCountLabel.text = good.description
+        negativeCountLabel.text = bad.description
+    }
+    
+    private func bindUserApplyData(study: String = "연장상태", stay: String = "잔류상태"){
+        studyStateLabel.text = study
+        stayStateLabel.text = stay
+    }
+    
+    private func bindInitData(){
+        bindUserApplyData()
+        bindUserPointData()
     }
     
     private func uploadBug(_ textField: UITextField){
         _ = Connector.instance
-            .getRequest(ReportAPI.reportBug, method: .post, params: ["platform" : "3", "content" : textField.text!])
+            .getRequest(ReportAPI.reportBug, method: .post, params: ["platform" : 3, "content" : textField.text!])
             .emptyData(vc: self)
             .subscribe(onNext: { [weak self] code in
                 if code == 201 { self?.showToast(msg: "버그 신청 성공") }
                 else{ self?.showError(code) }
             })
-    }
-    
-    private func setData(study: String = "연장상태", stay: String = "잔류상태", good: Int = 0, bad: Int = 0){
-        studyStateLabel.text = study
-        stayStateLabel.text = stay
-        positiveCountLabel.text = good.description
-        negativeCountLabel.text = bad.description
     }
     
 }
@@ -83,7 +106,7 @@ extension MyPageVC: UITableViewDataSource, UITableViewDelegate{
         switch indexPath.row {
         case 1:
             if token.get() == nil { goNextViewWithStoryboard(storyId: "Auth", id: "SignInView") }
-            else{ token.remove(); tableView.reloadData(); setData() }
+            else{ token.remove(); tableView.reloadData(); bindInitData() }
         case 2:
             if token.get() == nil { showToast(msg: "로그인이 필요합니다") }
             else{ goNextViewWithStoryboard(storyId: "Auth", id: "ChangePasswordView") }
@@ -93,7 +116,7 @@ extension MyPageVC: UITableViewDataSource, UITableViewDelegate{
             if !loginCheck() { return }
             let alert = UIAlertController(title: "버그신고", message: nil, preferredStyle: .alert)
             alert.addTextField()
-            alert.addAction(UIAlertAction(title: "전송", style: .default){ [unowned self] _ in self.uploadBug(alert.textFields![0]) } )
+            alert.addAction(UIAlertAction(title: "전송", style: .default){ [weak self] _ in self?.uploadBug(alert.textFields![0]) } )
             alert.addAction(UIAlertAction.init(title: "취소", style: .cancel))
             present(alert, animated: true, completion: nil)
         case 6: goNextViewController("IntroDeveloperListView")
