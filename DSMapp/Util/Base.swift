@@ -5,7 +5,6 @@
 
 import Foundation
 import UIKit
-import RxSwift
 
 extension UIViewController{
     

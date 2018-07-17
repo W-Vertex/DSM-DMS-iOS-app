@@ -100,7 +100,7 @@ class TabShape: UITabBarController {
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        versionCheck("1.0.7")
+        versionCheck("1.1")
     }
     
     private func getAccessToken(){
